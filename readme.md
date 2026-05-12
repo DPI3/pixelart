@@ -1,13 +1,14 @@
 # Image to Pixel Art Converter
 
-A Python command-line tool that transforms any image into stunning pixel art. This script replicates the core functionality of [Pixel Art Village](https://pixelartvillage.com), allowing you to modify pixel size, apply color restrictions (quantization), use custom hex color palettes, adjust image settings, and export in different resolutions.
+A Python command-line tool that transforms any image into stunning pixel art. This script replicates the core functionality of [Pixel Art Village](https://pixelartvillage.com), allowing you to modify pixel size, apply color restrictions (quantization), use custom hex color palettes (or import them via URL), adjust image settings, and export in different resolutions.
 
 ## Features
 * **Adjustable Pixel Size:** Control how "blocky" the image gets.
-* **Custom Color Palettes:** Force the image to use a specific set of hex colors (e.g., Game Boy, 1-bit Macintosh, Synthwave).
+* **Custom Color Palettes:** Force the image to use a specific set of hex colors. 
+* **URL Palette Import (New!):** Directly paste a palette URL from **Coolors.co** or **Colorkit.co** to automatically extract and apply the colors.
 * **Adaptive Color Reduction:** Restrict the image to a specific number of colors (e.g., 8, 16) using an adaptive palette.
 * **Image Enhancements:** Tweak brightness, contrast, and saturation before pixelation to get the perfect lighting for your palette.
-* **Automatic Output Organization (New!):** Automatically saves images to an `outputs/` folder, or any custom directory you specify, keeping your workspace clean.
+* **Automatic Output Organization:** Automatically saves images to an `outputs/` folder, or any custom directory you specify.
 * **Dual Export Modes:**
     * **Large (Default):** Scales the image back up to its original dimensions using nearest-neighbor resampling to keep the pixel edges perfectly crisp.
     * **Small:** Outputs the literal tiny resolution (e.g., a 64x64 actual image).
@@ -37,18 +38,16 @@ Pixelates the image into 8x8 blocks and saves it as `outputs/result.png`.
 python pixelart.py photo.jpg result.png
 ```
 
-**2. Custom Output Directory**
+**2. Custom Palettes via URL (New!)**
+Instantly apply a palette by pasting a link from Coolors or Colorkit.
+```bash
+python pixelart.py photo.jpg result.png --size 8 --palette "[https://coolors.co/palette/264653-2a9d8f-e9c46a-f4a261-e76f51](https://coolors.co/palette/264653-2a9d8f-e9c46a-f4a261-e76f51)"
+```
+
+**3. Custom Output Directory**
 Saves the result in a specific folder (e.g., `gameboy_art/`). The script will create the folder if it doesn't exist.
 ```bash
 python pixelart.py photo.jpg result.png --outdir gameboy_art --palette "#0f380f,#306230,#8bac0f,#9bbc0f"
-```
-
-**3. Custom Palettes**
-Map your image to specific hex codes. Great for recreating retro console aesthetics.
-* *1-Bit Black & White:*
-  ```bash
-  python pixelart.py photo.jpg result.png --size 8 --palette "#000000,#ffffff"
-  
 ```
 
 **4. Change Pixel Size & Limit Adaptive Colors**
@@ -75,10 +74,10 @@ python pixelart.py photo.jpg result.png --size 8 --small
 |--------------|---------|-----------|-------------|
 | `input`      | String  | Required  | Path to the original input image. |
 | `output`     | String  | Required  | Filename to save the generated pixel art image (e.g., `result.png`). |
-| `--outdir`   | String  | `outputs` | **New:** Directory to save the image. Will be created automatically if missing. |
+| `--outdir`   | String  | `outputs` | Directory to save the image. Will be created automatically if missing. |
 | `--size`     | Integer | `8`       | Size of the pixel blocks (higher = more pixelated). |
 | `--colors`   | Integer | `None`    | Number of adaptive colors to reduce the image to (ignored if `--palette` is used). |
-| `--palette`  | String  | `None`    | Comma-separated hex colors to force a custom palette (e.g., `"#FF0000,#00FF00"`). |
+| `--palette`  | String  | `None`    | Comma-separated hex colors OR a **Coolors/Colorkit URL** to force a custom palette. |
 | `--bright`   | Float   | `1.0`     | Brightness multiplier (1.0 = no change, <1.0 = darker, >1.0 = brighter). |
 | `--contrast` | Float   | `1.0`     | Contrast multiplier (1.0 = no change). |
 | `--sat`      | Float   | `1.0`     | Color saturation multiplier (1.0 = no change). |
@@ -88,4 +87,4 @@ python pixelart.py photo.jpg result.png --size 8 --small
 ## How it Works
 1.  **Downscaling:** The script mathematically shrinks the image.
 2.  **Nearest Neighbor Resampling:** Unlike standard scaling (which blurs pixels to make them smooth), this method strictly duplicates exact colors, creating sharp, blocky "pixel art" squares.
-3.  **Quantization:** Analyzes the image and groups similar colors together to map the image down to a strict number of colors (when `--colors` is used), or maps the image's pixels to the nearest match in a user-provided hex list (when `--palette` is used).
+3.  **Quantization & Palette Parsing:** Analyzes the image and maps colors. It can automatically extract valid hex codes from Coolors.co and Colorkit.co URLs using regex, map them to a dummy image palette, and quantize your image to strictly use those imported colors.
