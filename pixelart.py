@@ -1,30 +1,25 @@
+import os
 import argparse
 from PIL import Image, ImageEnhance, ImageDraw
 
 def apply_custom_palette(img, hex_colors):
     """Maps an image to a specific list of hex colors."""
     rgb_colors = []
-    # Convert hex codes (e.g., "#FF0000") to RGB values (255, 0, 0)
     for hex_code in hex_colors:
         hex_code = hex_code.lstrip('#')
         rgb_colors.extend(tuple(int(hex_code[i:i+2], 16) for i in (0, 2, 4)))
 
-    # A Pillow palette must have exactly 768 integers (256 colors * 3 channels)
-    # We pad the rest of the list with zeroes if we provide fewer than 256 colors
     rgb_colors = rgb_colors + [0] * (768 - len(rgb_colors))
 
-    # Create a 1x1 dummy image to store the palette
     palette_image = Image.new('P', (1, 1))
     palette_image.putpalette(rgb_colors)
 
-    # Convert the original image to use this palette
-    # dither=0 (NONE) ensures crisp, unblended pixel art colors
     return img.quantize(palette=palette_image, dither=0).convert('RGB')
 
 
-def create_pixel_art(input_path, output_path, pixel_size=8, num_colors=None, custom_palette=None,
-                     brightness=1.0, contrast=1.0, saturation=1.0, 
-                     scale_up=True, add_grid=False):
+def create_pixel_art(input_path, output_filename, output_dir="outputs", pixel_size=8, 
+                     num_colors=None, custom_palette=None, brightness=1.0, 
+                     contrast=1.0, saturation=1.0, scale_up=True, add_grid=False):
     
     # 1. Open the image
     try:
@@ -41,7 +36,7 @@ def create_pixel_art(input_path, output_path, pixel_size=8, num_colors=None, cus
     if saturation != 1.0:
         img = ImageEnhance.Color(img).enhance(saturation)
 
-    # 3. Calculate target pixelated dimensions
+    # 3. Calculate target dimensions
     orig_width, orig_height = img.size
     pixel_size = max(1, int(pixel_size))
     small_width = max(1, orig_width // pixel_size)
@@ -52,10 +47,8 @@ def create_pixel_art(input_path, output_path, pixel_size=8, num_colors=None, cus
     
     # 5. Color Palette Processing
     if custom_palette:
-        # Apply strict custom hex colors
         small_img = apply_custom_palette(small_img, custom_palette)
     elif num_colors is not None and num_colors > 0:
-        # Fallback to the adaptive method if just a number is provided
         small_img = small_img.convert('P', palette=Image.Palette.ADAPTIVE, colors=num_colors)
         small_img = small_img.convert('RGB')
         
@@ -77,14 +70,27 @@ def create_pixel_art(input_path, output_path, pixel_size=8, num_colors=None, cus
         for y in range(0, final_img.height, pixel_size):
             draw.line([(0, y), (final_img.width, y)], fill=grid_color)
 
-    # 8. Save
-    final_img.save(output_path)
-    print(f"Success! Pixel art saved to '{output_path}'.")
+    # 8. Handle Directories & Saving
+    # Create the output directory if it doesn't exist yet
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Created new directory: '{output_dir}/'")
+
+    # Combine the folder path and the file name
+    final_output_path = os.path.join(output_dir, output_filename)
+
+    # Save the file
+    final_img.save(final_output_path)
+    print(f"Success! Pixel art saved to '{final_output_path}'.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert an image to Pixel Art")
     parser.add_argument("input", help="Path to input image")
-    parser.add_argument("output", help="Path to save output image")
+    parser.add_argument("output", help="Filename for the output image (e.g. result.png)")
+    
+    # NEW ARGUMENT: Directory output
+    parser.add_argument("--outdir", type=str, default="outputs", help="Directory to save the image (default: 'outputs')")
+    
     parser.add_argument("--size", type=int, default=8, help="Pixel block size")
     parser.add_argument("--colors", type=int, default=None, help="Number of adaptive colors")
     parser.add_argument("--palette", type=str, default=None, help="Comma-separated hex colors (e.g., '#FF0000,#00FF00')")
@@ -96,12 +102,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Parse the custom palette string into a list
     hex_palette_list = args.palette.split(',') if args.palette else None
 
     create_pixel_art(
         input_path=args.input,
-        output_path=args.output,
+        output_filename=args.output,
+        output_dir=args.outdir,      # Pass the directory argument
         pixel_size=args.size,
         num_colors=args.colors,
         custom_palette=hex_palette_list,
